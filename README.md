@@ -18,8 +18,25 @@ Import the fontscaler.js module.  Instantiate instances with an html element:
 ## Usage
 
 By default the target will grow or shrink its font-size to fit within it's parent.  For custom heights, CSS variables can be provided within the selector for the target.  Media queries can be used to provide different heights at different viewport sizes.  Font sizes are provided in px units:
+```
+--fontScalerHeight: 300;
+```
 
-```--fontScalerHeight: 300; ```
+Optional css variables to limit font sizes
+```
+--maxFontSize: 36;
+--minFontSize: 12;
+```
+
+Additional optional settings
+```heightVar: "--fontScalerHeight",
+maxFontSizeVar: "--maxFontSize",
+minFontSizeVar: "--minFontSize",
+maxIterations: 500,
+maxIterationsErrorMessage: "FontScaler max iterations exceeded",
+invalidTargetErrorMessage: "Invalid target element",
+invalidHeightErrorMessage: "Invalid height variable"
+```
 
 ## License
 

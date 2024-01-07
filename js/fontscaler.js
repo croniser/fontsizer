@@ -2,13 +2,15 @@
  * FontSizer class for adjusting font size of an element to fit within its parent container or css height variables
  * @class
  * @author: G. Croniser
- * @version 0.1.0
+ * @version 0.1.1
  *
  */
 export default class FontScaler {
     _target;
     _settings = {
         heightVar: "--fontScalerHeight",
+        maxFontSizeVar: "--maxFontSize",
+        minFontSizeVar: "--minFontSize",
         maxIterations: 500,
         maxIterationsErrorMessage: "FontScaler max iterations exceeded",
         invalidTargetErrorMessage: "Invalid target element",
@@ -40,7 +42,7 @@ export default class FontScaler {
      * @throws {Error} if maxHeight cannot be determined
      */
     updateHeight() {
-        this._maxHeight = getComputedStyle(this._target).getPropertyValue(this._settings.heightVar)
+        this._maxHeight = this.getCssVar(this._target, this._settings.heightVar)
             || this._target.parentElement.clientHeight;
         if (!this._maxHeight) {
             throw new Error(this._settings.invalidHeightErrorMessage);
@@ -56,6 +58,16 @@ export default class FontScaler {
         this._clone.style.position = "absolute";
         this._clone.style.width = this._target.offsetWidth + "px";
         this._target.parentElement.insertBefore(this._clone, this._target.nextSibling);
+    }
+
+    /**
+     * Retrieve css variable value if it exists
+     * @param {HTMLElement} elem element context for css variable
+     * @param {String} varName name of css variable
+     * @returns {any} value of css variable
+     */
+    getCssVar(elem, varName) {
+        return getComputedStyle(elem).getPropertyValue(varName);
     }
 
     /**
@@ -86,11 +98,19 @@ export default class FontScaler {
     }
 
     /**
+     * Set the clone fontsize
+     * @param {Nummber} fontSize value for the clone
+     */
+    setFontSize(fontSize) {
+        this._clone.style.fontSize = fontSize + "px";
+    }
+
+    /**
      * Decrement the font size of the cloned element
      */
     decrementFontSize() {
         this.countLoop();
-        this._clone.style.fontSize = --this._fontSize + "px";
+        this.setFontSize(--this._fontSize);
     }
 
     /**
@@ -98,7 +118,7 @@ export default class FontScaler {
      */
     incrementFontSize() {
         this.countLoop();
-        this._clone.style.fontSize = ++this._fontSize + "px";
+        this.setFontSize(++this._fontSize);
     }
 
     /**
@@ -128,29 +148,40 @@ export default class FontScaler {
     }
 
     /**
-     * Trigger the font size adjustment process
-     * @throws {error} catch all arouned font sizing loops
+     * If min/max font size variables exists, implment the limit
      */
-    execute() {
-        try {
-            this._iterations = 0;
-            this.updateHeight();
-            this.initClone();
-            this.isTextTooLarge()
-                ? this.shrinkText()
-                : this.growText();
-            this.syncFontSize();
-        } catch (error) {
-            console.error(error);
+    setMinMaxFontSize() {
+        const maxFontSize = this.getCssVar(this._target, this._settings.maxFontSizeVar);
+        const minFontSize = this.getCssVar(this._target, this._settings.minFontSizeVar);
+        if (maxFontSize && maxFontSize < this._fontSize) {
+            this._fontSize = maxFontSize;
         }
+        if (minFontSize && minFontSize > this._fontSize) {
+            this._fontSize = minFontSize;
+        }
+        this.setFontSize(this._fontSize);
     }
 
     /**
-     * Red uce the number of calls to when the window is repainted, ~66ms
+     * Reduce the number of calls to when the window is repainted, ~66ms
      */
     debounce() {
         this._animationFrame && window.cancelAnimationFrame(this._animationFrame);
         this._animationFrame = window.requestAnimationFrame(() => this.execute());
+    }
+
+    /**
+     * Trigger the font size adjustment process
+     */
+    execute() {
+        this._iterations = 0;
+        this.updateHeight();
+        this.initClone();
+        this.isTextTooLarge()
+            ? this.shrinkText()
+            : this.growText();
+        this.setMinMaxFontSize();
+        this.syncFontSize();
     }
 
 }
